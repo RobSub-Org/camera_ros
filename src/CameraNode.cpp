@@ -326,13 +326,23 @@ CameraNode::CameraNode(const rclcpp::NodeOptions &options)
   param_descr_use_node_time.read_only = true;
   use_node_time = declare_parameter<bool>("use_node_time", false, param_descr_use_node_time);
 
+  /* ROBSUB CODE START */
+  // Custom QoS
+  rclcpp::QoS cam_qos = rclcpp::QoS(rclcpp::KeepLast(2))
+    .reliability(rclcpp::ReliabilityPolicy::BestEffort)
+    .durability(rclcpp::DurabilityPolicy::Volatile)
+    .liveliness(rclcpp::LivelinessPolicy::Automatic)
+    .liveliness_lease_duration(rclcpp::Duration(10, 0))
+    // .deadline(rclcpp::Duration(0, 1e8)) // 100ms // deadline doesn't work without time sync
+;
   // publisher for raw and compressed image
-  pub_image = this->create_publisher<sensor_msgs::msg::Image>("~/image_raw", 1);
+  pub_image = this->create_publisher<sensor_msgs::msg::Image>("~/image_raw", cam_qos);
   pub_image_compressed =
-    this->create_publisher<sensor_msgs::msg::CompressedImage>("~/image_raw/compressed", 1);
-  pub_ci = this->create_publisher<sensor_msgs::msg::CameraInfo>("~/camera_info", 1);
+  this->create_publisher<sensor_msgs::msg::CompressedImage>("~/image_raw/compressed", cam_qos);
+  pub_ci = this->create_publisher<sensor_msgs::msg::CameraInfo>("~/camera_info", cam_qos);
   pub_diagnostics =
-    this->create_publisher<diagnostic_msgs::msg::DiagnosticArray>("/diagnostics", 1);
+  this->create_publisher<diagnostic_msgs::msg::DiagnosticArray>("/diagnostics", cam_qos);
+  /* ROBSUB CODE END */
 
   // start camera manager and check for cameras
   const int ec_start = camera_manager.start();
