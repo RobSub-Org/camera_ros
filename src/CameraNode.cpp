@@ -774,19 +774,25 @@ CameraNode::process(libcamera::Request *const request)
         if (now_ns - last_ns >= min_interval.count() * 1e6) {
           if (last_exec_time_ns.compare_exchange_strong(last_ns, now_ns)) {
             pub_image_compressed->publish(std::move(msg_img_compressed));
+            sensor_msgs::msg::CameraInfo ci = cim.getCameraInfo();
+            ci.header = hdr;
+            pub_ci->publish(ci);
           }
         }
       #else
         pub_image_compressed->publish(std::move(msg_img_compressed));
+        sensor_msgs::msg::CameraInfo ci = cim.getCameraInfo();
+        ci.header = hdr;
+        pub_ci->publish(ci);
       #endif
       /* ROBSUB CODE END */
             
       // // pub_image->publish(std::move(msg_img));
       // pub_image_compressed->publish(std::move(msg_img_compressed));
 
-      sensor_msgs::msg::CameraInfo ci = cim.getCameraInfo();
-      ci.header = hdr;
-      pub_ci->publish(ci);
+      // sensor_msgs::msg::CameraInfo ci = cim.getCameraInfo();
+      // ci.header = hdr;
+      // pub_ci->publish(ci);
     }
     else if (request->status() == libcamera::Request::RequestCancelled) {
       diagnostic_status.level = diagnostic_msgs::msg::DiagnosticStatus::WARN;
