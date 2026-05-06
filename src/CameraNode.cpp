@@ -63,6 +63,20 @@
 #include <utility>
 #include <vector>
 
+/* ROBSUB CODE START */
+#include <atomic>
+#include <chrono>
+
+#define MIN_DELAY_MS 33 // Higher means less FPS
+
+#define MANUAL_FPS_LIMITATION // Comment this to disable FPS limitation
+
+#ifdef MANUAL_FPS_LIMITATION
+std::atomic<int64_t> last_exec_time_ns{0};
+const std::chrono::milliseconds min_interval(MIN_DELAY_MS); // ms
+#endif
+/* ROBSUB CODE END */
+
 namespace rclcpp
 {
 class NodeOptions;
@@ -750,8 +764,25 @@ CameraNode::process(libcamera::Request *const request)
                                  stream->configuration().pixelFormat.toString());
       }
 
-      // pub_image->publish(std::move(msg_img));
-      pub_image_compressed->publish(std::move(msg_img_compressed));
+      /* ROBSUB CODE START */
+      // Publish
+      #ifdef MANUAL_FPS_LIMITATION
+        auto now = std::chrono::steady_clock::now();
+        int64_t now_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
+
+        int64_t last_ns = last_exec_time_ns.load();
+        if (now_ns - last_ns >= min_interval.count() * 1e6) {
+          if (last_exec_time_ns.compare_exchange_strong(last_ns, now_ns)) {
+            pub_image_compressed->publish(std::move(msg_img_compressed));
+          }
+        }
+      #else
+        pub_image_compressed->publish(std::move(msg_img_compressed));
+      #endif
+      /* ROBSUB CODE END */
+            
+      // // pub_image->publish(std::move(msg_img));
+      // pub_image_compressed->publish(std::move(msg_img_compressed));
 
       sensor_msgs::msg::CameraInfo ci = cim.getCameraInfo();
       ci.header = hdr;
