@@ -67,9 +67,9 @@
 #include <atomic>
 #include <chrono>
 
-#define MIN_DELAY_MS 33 // Higher means less FPS
+#define MIN_DELAY_MS 100 // Higher means less FPS
 
-#define MANUAL_FPS_LIMITATION // Comment this to disable FPS limitation
+// #define MANUAL_FPS_LIMITATION // Comment this to disable FPS limitation
 
 #ifdef MANUAL_FPS_LIMITATION
 std::atomic<int64_t> last_exec_time_ns{0};
